@@ -54,11 +54,8 @@ void recv_data(const int sock, char* sentence);
 void recv_response(char* reply);
 void send_file(const int sock, const char* filename);
 void recv_file(const int sock, const char* filename);
-//建立服务器socket
 int create_socket(int* server_sock, int port);
-//连接服务器
 int connect_server(int* client_sock, const char *server_IP, const int port);
-//发送buffer
 void send_infomation(const int sock, const char* buffer);
 void get_list_client(const int sock_data);
 void get_address(char* addr, const char* str);

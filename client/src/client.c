@@ -10,6 +10,7 @@ void recv_data(const int sock, char* sentence) {
     buffer[len] = '\0';
     strcpy(sentence, buffer);
 }
+
 void recv_response(char* reply) {
     char sentence[8192];
     memset(sentence, 0, sizeof(sentence));
@@ -17,76 +18,69 @@ void recv_response(char* reply) {
     printf("%s\n", sentence);
     strcpy(reply, sentence);
 }
+
 void send_file(const int sock, const char* filename) {
     FILE* f = fopen(filename, "rb");
     if(!f){
         printf("Not the File\n");
+        return;
     }
     char buffer[MAX_SIZE];
     int n;
-
     do {
         n = fread(buffer, 1, 8190, f);
         send(sock, buffer, n, 0);
     } while (n > 0);
-
     fclose(f);
 }
+
 void recv_file(const int sock, const char* filename) {
     FILE* f = fopen(filename, "wb");
     int n;
     char buffer[MAX_SIZE];
-
     do {
         n = recv(sock, buffer, MAX_SIZE, 0);
         fwrite(buffer, 1, n, f);
     } while (n > 0);
-
     fclose(f);
 }
 
 void get_list_client(const int sock){
     int n;
     char buffer[MAX_SIZE];
-
     do {
         n = recv(sock, buffer, MAX_SIZE, 0);
         fwrite(buffer, 1, n, stdout);
     } while (n > 0);
 }
+
 int create_socket(int* server_sock, int port) {
     struct sockaddr_in addr;
-
     if ((*server_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
         printf("Error socket(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
     if (bind(*server_sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
         printf("Error bind(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
     if (listen(*server_sock, 10) == -1) {
         printf("Error listen(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
     return 0;
 }
+
 int connect_server(int* client_sock, const char *server_IP, const int port) {
     struct sockaddr_in server_addr;
-
     if ((*client_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
         printf("Error socket(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
@@ -94,22 +88,20 @@ int connect_server(int* client_sock, const char *server_IP, const int port) {
         printf("Error inet_pton(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
     if (connect(*client_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
         printf("Error connect(): %s(%d)\n", strerror(errno), errno);
         return 1;
     }
-
-    //printf("suc\n");
-
     return 0;
 }
+
 void send_infomation(const int sock, const char* buffer) {
     char sentence[MAX_SIZE];
     strcpy(sentence, buffer);
     strcat(sentence, "\r\n");
     send(sock, sentence, strlen(sentence), 0);
 }
+
 void get_address(char* addr, const char* str) {
     char* ptr;
     char tmp[100];
@@ -127,12 +119,12 @@ void get_address(char* addr, const char* str) {
     ptr = strtok(NULL, ",");
     strcat(addr, ptr);
 }
+
 int get_port(const char* str) {
     char* arg = NULL;
     char temp[100];
     int port = 0;
     strcpy(temp, str);
-    //printf("%s\n", tmp);
     arg = strtok(temp, ",");
     arg = strtok(NULL, ",");
     arg = strtok(NULL, ",");
@@ -141,35 +133,31 @@ int get_port(const char* str) {
     port = atoi(arg) * 256;
     arg = strtok(NULL, ",");
     port += atoi(arg);
-
     if(port < 1024)
         port = 2048;
     return port;
 }
+
 void get_command_arg(const char* buffer, char *cmd, char *arg) {
     if(buffer == NULL)
         return;
     char temp[1000];
     memset(temp, 0, 1000);
-
     strcpy(temp, buffer);
     char *flag = NULL;
-
     flag = strtok(temp, " ");
     strcpy(cmd, flag);
     flag = strtok(NULL, " ");
-
     if(flag != NULL){
         strcpy(arg, flag);
     }
 }
+
 void get_address_port_client(const char* buffer, char *arg){
     char temp[1000];
     memset(temp, 0, 1000);
-
     strcpy(temp, buffer);
     char *flag = NULL;
-
     flag = strtok(temp, " ");
     flag = strtok(NULL, " ");
     flag = strtok(NULL, " ");
@@ -184,7 +172,8 @@ int client_loop() {
     int len;
     char sentence[MAX_SIZE];
     char reply[MAX_SIZE];
-    for(int p = 0; p < 100000000; p++);
+
+    /* fix: 删除原代码中的忙等待循环 for(int p = 0; p < 100000000; p++); */
     printf("ftp client> ");
     fgets(sentence, 4096, stdin);
     len = strlen(sentence);
@@ -230,7 +219,8 @@ int client_loop() {
         send_infomation(client_sock, sentence);
         recv_response(reply);
     }
-    else if(strcmp(client_cmd, "Rq") == 0){
+    /* fix: 原代码为 strcmp(client_cmd, "Rq")，应为 "RNTO" */
+    else if(strcmp(client_cmd, "RNTO") == 0){
         client_status = RNTO;
         send_infomation(client_sock, sentence);
         recv_response(reply);
